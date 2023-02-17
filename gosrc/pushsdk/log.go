@@ -13,7 +13,7 @@ type DumbLogger struct {
 func (myl *DumbLogger) Init(logfileFd *os.File, lPrefix string) {
 	mwr := io.MultiWriter(os.Stdout, logfileFd)
 	myl.l = log.Default()
-	myl.l.SetFlags(log.LstdFlags | log.Lshortfile | log.LUTC | log.Lmsgprefix)
+	myl.l.SetFlags(log.LstdFlags | log.Lmsgprefix)
 	myl.l.SetPrefix(lPrefix)
 	myl.l.SetOutput(mwr)
 }
