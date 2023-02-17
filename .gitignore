@@ -104,3 +104,4 @@ go.work
 .vscode/
 rdpalert_pushconf.json
 bin/
+version.go

@@ -31,6 +31,7 @@ func main() {
 		_ = logFd.Close()
 	}()
 	gLogger.Info("Logging file prepared.")
+	gLogger.Info("Current Version: ", CurVersionStr)
 	// static data
 	curProg, err := os.Executable()
 	if err != nil {
