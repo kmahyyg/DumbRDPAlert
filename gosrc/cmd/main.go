@@ -109,14 +109,14 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 		args[3], authDomain, args[2], hostname, cIPs)
 	for _, v := range pushConf.DeviceKeys {
 		data := &pushsdk.PushContent{
-			Title:             notiTitle,
-			Body:              notiBody,
-			DeviceKey:         v,
-			Level:             pushConf.NotificationLevel,
-			Group:             "Security_RDPAlert",
-			AutomaticallyCopy: "1",
-			Copy:              hostname,
+			Title:     notiTitle,
+			Body:      notiBody,
+			DeviceKey: v,
 		}
+		data.Init()
+		data.Level = pushConf.NotificationLevel
+		data.Group = "Security_RDPAlert"
+		data.Copy = hostname
 		pCont = append(pCont, data)
 	}
 	return pCont, nil
@@ -133,7 +133,7 @@ func GetLocalIP() []string {
 	res := make([]string, 0)
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && !ipnet.IP.IsLinkLocalUnicast() {
 			if ipnet.IP.To4() != nil {
 				payload := ipnet.IP.String()
 				gLogger.Info("found local ip:", payload)
