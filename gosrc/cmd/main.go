@@ -21,6 +21,13 @@ var (
 )
 
 func main() {
+	// add logrotate
+	logFdPrevinfo, err := os.Stat("rdpalarm-running.log")
+	if err == nil {
+		if logFdPrevinfo.Size() > 1073741824 {
+			_ = os.Remove("rdpalarm-running.log")
+		}
+	}
 	// log file
 	logFd, err := os.OpenFile("rdpalarm-running.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
