@@ -2,6 +2,10 @@
 
 ## Build
 
+Run `./prebuild.sh` at project root folder then build with:
+
+Go Tool Argument: `-ldflags="-s -w -H=windowsgui" -trimpath`
+
 ## Usage
 
 Copy `assets/rdpalert_pushconf.json.example` to `rdpalert_pushconf.json` and modify, then save it within the same directory of executable.
