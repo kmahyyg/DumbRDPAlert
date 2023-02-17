@@ -1,0 +1,5 @@
+{
+  "deviceKeys": [""],
+  "serverAddress": "https://username:url_encoded_password@host:port/path",
+  "notificationLevel": ""
+}
