@@ -5,7 +5,7 @@ cd ${SCRIPT_DIR}
 VERSIONSTR=$(git describe --long --dirty --tags --always | tr -d '\n')
 
 cat << EOF > ./gosrc/embedded/version.go
-package main
+package embedded
 
 var CurVersionStr = "${VERSIONSTR}"
 EOF

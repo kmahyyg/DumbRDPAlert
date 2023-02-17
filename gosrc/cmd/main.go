@@ -109,10 +109,13 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 		args[3], authDomain, args[2], hostname, cIPs)
 	for _, v := range pushConf.DeviceKeys {
 		data := &pushsdk.PushContent{
-			Title:     notiTitle,
-			Body:      notiBody,
-			DeviceKey: v,
-			Level:     pushConf.NotificationLevel,
+			Title:             notiTitle,
+			Body:              notiBody,
+			DeviceKey:         v,
+			Level:             pushConf.NotificationLevel,
+			Group:             "Security_RDPAlert",
+			AutomaticallyCopy: "1",
+			Copy:              hostname,
 		}
 		pCont = append(pCont, data)
 	}
