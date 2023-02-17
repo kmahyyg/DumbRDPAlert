@@ -29,7 +29,7 @@ func NewPusher(conf *PushConfig, logger *DumbLogger) (*pusher, error) {
 type PushConfig struct {
 	DeviceKeys        []string          `json:"deviceKeys" validate:"required"`
 	ServerAddress     string            `json:"serverAddress" validate:"url,required"`
-	NotificationLevel NotificationLevel `json:"notificationLevel,omitempty" validate:"oneof='active' 'passive' 'timeSensitive',omitempty"`
+	NotificationLevel NotificationLevel `json:"notificationLevel,omitempty" validate:"omitempty,oneof='active' 'passive' 'timeSensitive'"`
 }
 
 // PushContent is an instance of https://github.com/Finb/bark-server/blob/master/docs/API_V2.md
@@ -41,9 +41,9 @@ type PushContent struct {
 	DeviceKey string `json:"device_key" validate:"required"`
 	// optional, from here
 	Level NotificationLevel `json:"level,omitempty"`
-	Badge int               `json:"badge,omitempty" validate:"gt=0,omitempty"`
+	Badge int               `json:"badge,omitempty" validate:"omitempty,gt=0"`
 	// must be "1"
-	AutomaticallyCopy string `json:"automaticallyCopy,omitempty" validate:"oneof='0' '1',omitempty"`
+	AutomaticallyCopy string `json:"automaticallyCopy,omitempty" validate:"omitempty,oneof='0' '1'"`
 	// value to be copied
 	Copy string `json:"copy,omitempty"`
 	// alert sound, from https://github.com/Finb/Bark/tree/master/Sounds
@@ -53,14 +53,14 @@ type PushContent struct {
 	// Group Seperation
 	Group string `json:"group,omitempty"`
 	// isArchive must be string, "1" or "0"
-	IsArchive string `json:"isArchive,omitempty" validate:"oneof='0' '1',omitempty"`
+	IsArchive string `json:"isArchive,omitempty" validate:"omitempty,oneof='0' '1'"`
 	// Jump to URL when clicked
-	URL string `json:"URL,omitempty" validate:"url,omitempty"`
+	URL string `json:"url,omitempty" validate:"omitempty,url"`
 }
 
 func (pct *PushContent) Init() {
 	pct.AutomaticallyCopy = "1"
-	pct.IsArchive = "0"
+	pct.IsArchive = "1"
 	pct.Category = ""
 	pct.Level = ActiveNotification
 }

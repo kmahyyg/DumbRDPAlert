@@ -99,7 +99,7 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 	pCont := make([]*pushsdk.PushContent, 0)
 	authDomain := func() string {
 		if len(args[1]) == 0 {
-			return "."
+			return "localhost"
 		} else {
 			return args[1]
 		}
