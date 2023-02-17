@@ -105,7 +105,7 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 		}
 	}()
 	notiTitle := "RDP Login - Success"
-	notiBody := fmt.Sprintf("Login from %s As %s\\%s .\nCurrent host: %s , IPs: %s .\n",
+	notiBody := fmt.Sprintf("From: %s - %s\\%s\nCurrent host: %s, IPs: %s \n",
 		args[3], authDomain, args[2], hostname, cIPs)
 	for _, v := range pushConf.DeviceKeys {
 		data := &pushsdk.PushContent{
