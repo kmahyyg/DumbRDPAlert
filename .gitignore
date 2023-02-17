@@ -102,5 +102,5 @@ go.work
 
 .idea/
 .vscode/
-config.json
+rdpalert_pushconf.json
 bin/

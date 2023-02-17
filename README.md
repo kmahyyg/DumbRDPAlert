@@ -4,7 +4,7 @@
 
 ## Usage
 
-Copy `assets/config.json.example` to `config.json` and modify, then save it within the same directory of executable.
+Copy `assets/rdpalert_pushconf.json.example` to `rdpalert_pushconf.json` and modify, then save it within the same directory of executable.
 
 Note: Device key must be within the same format as the application shown.
 
