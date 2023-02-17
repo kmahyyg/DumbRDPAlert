@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"rdpalert/embedded"
 	"rdpalert/pushsdk"
+	netif "tailscale.com/net/interfaces"
 )
 
 var (
@@ -105,7 +105,7 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 		}
 	}()
 	notiTitle := "RDP Login - Success"
-	notiBody := fmt.Sprintf("From: %s - %s\\%s\nCurrent host: %s, IPs: %s \n",
+	notiBody := fmt.Sprintf("From: %s - %s\\%s\nHost: %s, IPs: %s \n",
 		args[3], authDomain, args[2], hostname, cIPs)
 	for _, v := range pushConf.DeviceKeys {
 		data := &pushsdk.PushContent{
@@ -124,26 +124,17 @@ func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent
 
 // GetLocalIP returns the non loopback local IP of the host
 func GetLocalIP() []string {
-	addrs, err := net.InterfaceAddrs()
+	dIf, _, err := netif.LocalAddresses()
 	if err != nil {
-		gLogger.Critical("get local ip failed:", err)
+		gLogger.Critical("get local addr:", err)
 		return nil
 	}
-	gLogger.Debug("got ip addrs, Length: ", len(addrs))
+	if len(dIf) == 0 {
+		return nil
+	}
 	res := make([]string, 0)
-	for _, address := range addrs {
-		// check the address type and if it is not a loopback the display it
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && !ipnet.IP.IsLinkLocalUnicast() {
-			if ipnet.IP.To4() != nil {
-				payload := ipnet.IP.String()
-				gLogger.Info("found local ip:", payload)
-				res = append(res, payload)
-			}
-		}
-	}
-	if len(res) == 0 {
-		gLogger.Debug("get local ip with length zero.")
-		return nil
+	for _, v := range dIf {
+		res = append(res, v.String())
 	}
 	return res
 }
