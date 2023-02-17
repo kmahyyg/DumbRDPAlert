@@ -105,3 +105,4 @@ go.work
 rdpalert_pushconf.json
 bin/
 version.go
+*.log
