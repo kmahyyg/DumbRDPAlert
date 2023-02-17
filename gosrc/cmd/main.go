@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"rdpalert/embedded"
 	"rdpalert/pushsdk"
 )
 
@@ -31,7 +32,7 @@ func main() {
 		_ = logFd.Close()
 	}()
 	gLogger.Info("Logging file prepared.")
-	gLogger.Info("Current Version: ", CurVersionStr)
+	gLogger.Info("Current Version: ", embedded.CurVersionStr)
 	// static data
 	curProg, err := os.Executable()
 	if err != nil {
