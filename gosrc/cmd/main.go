@@ -10,19 +10,17 @@ import (
 	"path/filepath"
 	"rdpalert/embedded"
 	"rdpalert/pushsdk"
-	netif "tailscale.com/net/netmon"
+	"rdpalert/utils"
 )
 
 const (
-	LOGFILE_NAME  = "rdpalarm-running.log"
+	LOGFILE_NAME  = "rdpalert_running.log"
 	CONFJSON_NAME = "rdpalert_pushconf.json"
 )
 
 var (
-	ErrParamInvalid     = errors.New("does not have enough args")
-	ErrCannotGetLocalIP = errors.New("cannot get local ip")
-	pushConf            = &pushsdk.PushConfig{}
-	gLogger             = &pushsdk.DumbLogger{}
+	ErrParamInvalid = errors.New("does not have enough args")
+	pushConf        = &pushsdk.PushConfig{}
 )
 
 func main() {
@@ -31,7 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// seperate file and dir
+	// separate file and dir
 	curWorkPath := filepath.Dir(curExecPath)
 	finalLogFilePath := filepath.Join(curWorkPath, LOGFILE_NAME)
 	// add logrotate
@@ -41,16 +39,16 @@ func main() {
 			_ = os.Remove(finalLogFilePath)
 		}
 	}
-	// log file
-	logFd, err := os.OpenFile(finalLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// log file and logger init
+	err = utils.InitLogger(finalLogFilePath, "RDPAlert ")
 	if err != nil {
 		panic(err)
 	}
-	gLogger.Init(logFd, "RDPAlarm ")
-	defer func() {
-		_ = logFd.Sync()
-		_ = logFd.Close()
-	}()
+	gLogger, err2 := utils.GetLoggerInstance()
+	if err2 != nil {
+		panic(err2)
+	}
+	defer func() { _ = utils.DestoryLoggerInstance() }()
 	gLogger.Info("Logging file prepared.")
 	gLogger.Debug("Argv: ", os.Args)
 	gLogger.Info("Current Version: ", embedded.CurVersionStr)
@@ -83,21 +81,4 @@ func main() {
 
 func printUsage() {
 	_, _ = fmt.Fprintln(os.Stderr, "Usage: RDPAlarm.exe <Auth Domain> <Auth Username> <Auth IP>.")
-}
-
-// GetLocalIP returns the non loopback local IP of the host
-func GetLocalIP() ([]string, error) {
-	dIf, _, err := netif.LocalAddresses()
-	if err != nil {
-		gLogger.Critical("get local addr:", err)
-		return nil, err
-	}
-	if len(dIf) == 0 {
-		return nil, ErrCannotGetLocalIP
-	}
-	res := make([]string, 0)
-	for _, v := range dIf {
-		res = append(res, v.String())
-	}
-	return res, nil
 }
