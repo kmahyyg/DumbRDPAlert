@@ -26,20 +26,20 @@ func (cuart *customUserAgentRT) RoundTrip(req *http.Request) (*http.Response, er
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-func SendHttpPostJSON(url string, body []byte) ([]byte, error) {
+func SendHttpPostJSON(url string, body []byte) ([]byte, int, error) {
 	http.DefaultClient.Transport = &customUserAgentRT{UserAgent: customUserAgent}
 	buf := bytes.NewBuffer(body)
 	respD, err := http.Post(url, postJSONContentType, buf)
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 	resp, err := io.ReadAll(respD.Body)
-	defer respD.Body.Close()
+	defer func() { _ = respD.Body.Close() }()
 	if err != nil {
-		return nil, err
+		return nil, respD.StatusCode, err
 	}
 	if respD.StatusCode != http.StatusOK {
-		return resp, ErrHttpRequestFailed
+		return resp, respD.StatusCode, ErrHttpRequestFailed
 	}
-	return resp, nil
+	return resp, respD.StatusCode, nil
 }

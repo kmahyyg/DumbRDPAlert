@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	verifier                  = validator.New()
-	ErrConfigLogicMismatch    = errors.New("config logic mismatch, required item is not in place")
-	ErrPushMethodNotSupported = errors.New("push method not supported")
+	verifier = validator.New()
+	//ErrConfigLogicMismatch    = errors.New("config logic mismatch, required item is not in place")
+	//ErrPushMethodNotSupported = errors.New("push method not supported")
 )
 
 type PushContent interface {
@@ -20,6 +20,7 @@ type PushContent interface {
 	FromGeneral(g GeneralPushContent) (PushContent, error) // FromGeneral transform from generalPushContent to specific
 	ToBytes() []byte                                       // ToBytes convert data to bytes then for send out
 	SetPushProvider()                                      // SetPushProvider ensures provider info is attached
+	AcceptExtParamSettings(d any)                          // AcceptExtParamSettings get config from PushProviderImpl and apply
 }
 
 type GeneralPushContent struct {
@@ -42,8 +43,12 @@ type PushConfig struct {
 }
 
 func (pc *PushConfig) VerifyConfig() error {
+	err := verifier.Struct(pc)
+	if err != nil {
+		return err
+	}
 	for _, v := range pc.PushMethods {
-		err := v.VerifyConfig()
+		err = v.VerifyConfig()
 		if err != nil {
 			return err
 		}
@@ -65,14 +70,14 @@ const (
 
 // AbstractPushProvider handle all provider specific issues
 type AbstractPushProvider struct {
-	ProviderServerURL string         `json:"serverURL" validate:"url,required"`
-	AdditionalParams  map[string]any `json:"addiParams" validate:"omitempty"`
+	ProviderServerURL string `json:"serverURL" validate:"url,required"`
+	ExtraParams       any    `json:"extParams" validate:"omitempty"`
 	PushProviderImpl
 }
 type PushProviderImpl interface {
 	VerifyConfig() error
 	TransformToSpecificPushContent(g GeneralPushContent) (PushContent, error)
-	SendPushContent(p PushContent) error
+	SendPushContent(p PushContent) (*PushResponse, error)
 }
 
 // PushResponse represent HTTP Response Data from PushNotification Service Provider

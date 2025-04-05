@@ -134,6 +134,9 @@ func preparePushContent() (*pushsdk.GeneralPushContent, error) {
 		Title:       notiTitle,
 		ShortTitle:  notiShort,
 		Description: notiBody,
+		ExtParams: map[string]any{
+			"copyDest": hostname,
+		},
 	}
 	return gpc, nil
 }

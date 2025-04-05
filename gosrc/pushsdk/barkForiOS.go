@@ -1,8 +1,13 @@
 package pushsdk
 
-// BarkPushContent is an instance of https://github.com/Finb/bark-server/blob/master/docs/API_V2.md
+import (
+	"encoding/json"
+	"rdpalert/utils"
+)
+
+// barkPushContent is an instance of https://github.com/Finb/bark-server/blob/master/docs/API_V2.md
 // current version is v2.2.0 for server side, updated at 2025/04/05
-type BarkPushContent struct {
+type barkPushContent struct {
 	// required
 	Title     string `json:"title" validate:"required"`
 	Body      string `json:"body" validate:"required"`
@@ -10,14 +15,14 @@ type BarkPushContent struct {
 	// SubTitle is optional, but for UX, I'll make it required
 	SubTitle string `json:"subtitle" validate:"required"`
 	// from here, all options below are OPTIONAL
-	Level BarkiOSNotificationLevel `json:"level,omitempty"`
+	Level barkiOSNotificationLevel `json:"level,omitempty"`
 	Badge int                      `json:"badge,omitempty" validate:"omitempty,gt=0"`
 	// AutomaticallyCopy must be "1" in string
 	AutomaticallyCopy string `json:"automaticallyCopy,omitempty" validate:"omitempty,oneof='0' '1'"`
 	// Copy store the value to be copied when user click button
 	Copy string `json:"copy,omitempty"`
 	// alert Sound, from https://github.com/Finb/Bark/tree/master/Sounds
-	Sound BarkAlertSound `json:"sound,omitempty"`
+	Sound barkAlertSound `json:"sound,omitempty"`
 	// Notification Icon URL
 	Icon string `json:"icon,omitempty"`
 	// Group Seperation
@@ -26,56 +31,135 @@ type BarkPushContent struct {
 	IsArchive string `json:"isArchive,omitempty" validate:"omitempty,oneof='0' '1'"`
 	// Jump to URL when clicked
 	URL string `json:"url,omitempty" validate:"omitempty,url"`
+
+	// provider info
+	providerName PushProvider
 }
 
-func (bpct *BarkPushContent) Init() {
+func (bpct *barkPushContent) FromGeneral(g GeneralPushContent) (PushContent, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bpct *barkPushContent) ToBytes() []byte {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bpct *barkPushContent) Init() {
 	bpct.AutomaticallyCopy = "1"
 	bpct.IsArchive = "1"
+	bpct.providerName = BarkForiOS
+	bpct.Group = "Sec_RdpAlert"
 	bpct.Level = ActiveNotification
 }
 
-type BarkiOSNotificationLevel string
+func (bpct *barkPushContent) Provider() PushProvider {
+	return bpct.providerName
+}
+
+func (bpct *barkPushContent) SetPushProvider() {
+	bpct.providerName = BarkForiOS
+}
+
+func (bpct *barkPushContent) AcceptExtParamSettings(d any) {
+	d1 := d.(*barkPushProviderExtraParams)
+	if d1.IOSNotificationLevel != "" {
+		bpct.Level = d1.IOSNotificationLevel
+	}
+	if d1.NotificationGroup != "" {
+		bpct.Group = d1.NotificationGroup
+	}
+}
+
+type barkPushProvider struct {
+	ProviderServerURL string                       `json:"serverURL" validate:"url,required"`
+	ExtraParams       *barkPushProviderExtraParams `json:"extParams" validate:"omitempty"`
+}
+
+func (b barkPushProvider) VerifyConfig() error {
+	err1 := verifier.Struct(b)
+	if err1 != nil {
+		return err1
+	}
+	err2 := verifier.Struct(b.ExtraParams)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+func (b barkPushProvider) TransformToSpecificPushContent(g GeneralPushContent) (PushContent, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b barkPushProvider) SendPushContent(p PushContent) (*PushResponse, error) {
+	gLogger, err := utils.GetLoggerInstance()
+	if err != nil {
+		return nil, err
+	}
+	pData := p.(*barkPushContent)
+	body := pData.ToBytes()
+	respData, _, err := SendHttpPostJSON(b.ProviderServerURL, body)
+	pushResp := &PushResponse{}
+	err = json.Unmarshal(respData, pushResp)
+	if err != nil {
+		return nil, err
+	}
+	gLogger.Info("pushResp: ", pushResp.String())
+	return pushResp, nil
+}
+
+type barkPushProviderExtraParams struct {
+	// Bark for ios only
+	NotificationGroup    string                   `json:"notificationGrp,omitempty" validate:"omitempty"`
+	DeviceKeys           []string                 `json:"deviceKeys" validate:"required"`
+	IOSNotificationLevel barkiOSNotificationLevel `json:"iOSNotificationLvl,omitempty" validate:"omitempty,oneof='active' 'passive' 'timeSensitive' 'critical'"`
+}
+
+type barkiOSNotificationLevel string
 
 const (
-	ActiveNotification        BarkiOSNotificationLevel = "active"
-	TimeSensitiveNotification BarkiOSNotificationLevel = "timeSensitive"
-	SilentNotification        BarkiOSNotificationLevel = "passive"
-	CriticalNotification      BarkiOSNotificationLevel = "critical"
+	ActiveNotification        barkiOSNotificationLevel = "active"
+	TimeSensitiveNotification barkiOSNotificationLevel = "timeSensitive"
+	SilentNotification        barkiOSNotificationLevel = "passive"
+	CriticalNotification      barkiOSNotificationLevel = "critical"
 )
 
-type BarkAlertSound string
+type barkAlertSound string
 
 const (
-	Alarm              BarkAlertSound = "alarm.caf"
-	Anticipate         BarkAlertSound = "anticipate.caf"
-	Bell               BarkAlertSound = "bell.caf"
-	Birdsong           BarkAlertSound = "birdsong.caf"
-	Bloom              BarkAlertSound = "bloom.caf"
-	Calypso            BarkAlertSound = "calypso.caf"
-	Chime              BarkAlertSound = "chime.caf"
-	Choo               BarkAlertSound = "choo.caf"
-	Descent            BarkAlertSound = "descent.caf"
-	Electronic         BarkAlertSound = "electronic.caf"
-	Fanfare            BarkAlertSound = "fanfare.caf"
-	Glass              BarkAlertSound = "glass.caf"
-	Gotosleep          BarkAlertSound = "gotosleep.caf"
-	Healthnotification BarkAlertSound = "healthnotification.caf"
-	Horn               BarkAlertSound = "horn.caf"
-	Ladder             BarkAlertSound = "ladder.caf"
-	Mailsent           BarkAlertSound = "mailsent.caf"
-	Minuet             BarkAlertSound = "minuet.caf"
-	Multiwayinvitation BarkAlertSound = "multiwayinvitation.caf"
-	Newmail            BarkAlertSound = "newmail.caf"
-	Newsflash          BarkAlertSound = "newsflash.caf"
-	Noir               BarkAlertSound = "noir.caf"
-	Paymentsuccess     BarkAlertSound = "paymentsuccess.caf"
-	Shake              BarkAlertSound = "shake.caf"
-	Sherwoodforest     BarkAlertSound = "sherwoodforest.caf"
-	Silence            BarkAlertSound = "silence.caf"
-	Spell              BarkAlertSound = "spell.caf"
-	Suspense           BarkAlertSound = "suspense.caf"
-	Telegraph          BarkAlertSound = "telegraph.caf"
-	Tiptoes            BarkAlertSound = "tiptoes.caf"
-	Typewriters        BarkAlertSound = "typewriters.caf"
-	Update             BarkAlertSound = "update.caf"
+	Alarm              barkAlertSound = "alarm.caf"
+	Anticipate         barkAlertSound = "anticipate.caf"
+	Bell               barkAlertSound = "bell.caf"
+	Birdsong           barkAlertSound = "birdsong.caf"
+	Bloom              barkAlertSound = "bloom.caf"
+	Calypso            barkAlertSound = "calypso.caf"
+	Chime              barkAlertSound = "chime.caf"
+	Choo               barkAlertSound = "choo.caf"
+	Descent            barkAlertSound = "descent.caf"
+	Electronic         barkAlertSound = "electronic.caf"
+	Fanfare            barkAlertSound = "fanfare.caf"
+	Glass              barkAlertSound = "glass.caf"
+	Gotosleep          barkAlertSound = "gotosleep.caf"
+	Healthnotification barkAlertSound = "healthnotification.caf"
+	Horn               barkAlertSound = "horn.caf"
+	Ladder             barkAlertSound = "ladder.caf"
+	Mailsent           barkAlertSound = "mailsent.caf"
+	Minuet             barkAlertSound = "minuet.caf"
+	Multiwayinvitation barkAlertSound = "multiwayinvitation.caf"
+	Newmail            barkAlertSound = "newmail.caf"
+	Newsflash          barkAlertSound = "newsflash.caf"
+	Noir               barkAlertSound = "noir.caf"
+	Paymentsuccess     barkAlertSound = "paymentsuccess.caf"
+	Shake              barkAlertSound = "shake.caf"
+	Sherwoodforest     barkAlertSound = "sherwoodforest.caf"
+	Silence            barkAlertSound = "silence.caf"
+	Spell              barkAlertSound = "spell.caf"
+	Suspense           barkAlertSound = "suspense.caf"
+	Telegraph          barkAlertSound = "telegraph.caf"
+	Tiptoes            barkAlertSound = "tiptoes.caf"
+	Typewriters        barkAlertSound = "typewriters.caf"
+	Update             barkAlertSound = "update.caf"
 )

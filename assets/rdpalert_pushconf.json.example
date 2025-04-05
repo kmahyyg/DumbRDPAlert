@@ -1,5 +1,19 @@
 {
-  "deviceKeys": [""],
-  "serverAddress": "https://username:url_encoded_password@host:port/path",
-  "notificationLevel": ""
+  "isDryRun": false,
+  "pushMethods": {
+    "bark": {
+      "serverURL": "https://xxxx/push",
+      "extParams": {
+        "deviceKeys": ["xxx"],
+        "iOSNotificationLvl": "active",
+        "notificationGrp": "xxxAlert"
+      }
+    },
+    "sc3": {
+      "serverURL": "https://xxxx/send/xxx.send",
+      "extParams": {
+        "customPushTags": ["xxxAlert"]
+      }
+    }
+  }
 }
