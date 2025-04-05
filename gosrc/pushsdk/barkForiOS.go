@@ -7,6 +7,8 @@ type BarkPushContent struct {
 	Title     string `json:"title" validate:"required"`
 	Body      string `json:"body" validate:"required"`
 	DeviceKey string `json:"device_key" validate:"required"`
+	// SubTitle is optional, but for UX, I'll make it required
+	SubTitle string `json:"subtitle" validate:"required"`
 	// from here, all options below are OPTIONAL
 	Level BarkiOSNotificationLevel `json:"level,omitempty"`
 	Badge int                      `json:"badge,omitempty" validate:"omitempty,gt=0"`
