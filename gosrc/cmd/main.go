@@ -36,10 +36,11 @@ func main() {
 	logFdPrevinfo, err := os.Stat(finalLogFilePath)
 	if err == nil {
 		if logFdPrevinfo.Size() > 4194304 {
+			// only preserve last 4MiB data
 			_ = os.Remove(finalLogFilePath)
 		}
 	}
-	// log file and logger init
+	// log file prepare and logger init
 	err = utils.InitLogger(finalLogFilePath, "RDPAlert ")
 	if err != nil {
 		panic(err)
@@ -52,8 +53,8 @@ func main() {
 	gLogger.Info("Logging file prepared.")
 	gLogger.Debug("Argv: ", os.Args)
 	gLogger.Info("Current Version: ", embedded.CurVersionStr)
-	// static data
-	curHostname, err := os.Hostname()
+	// static data ingestion, check to get hostname first
+	_, err = os.Hostname()
 	if err != nil {
 		gLogger.Critical("get hostname:", err)
 	}
@@ -64,7 +65,7 @@ func main() {
 		gLogger.Critical("param length check:", ErrParamInvalid)
 	}
 	gLogger.Info("Params checked.")
-	// config
+	// config load
 	curConfPath := filepath.Join(curWorkPath, CONFJSON_NAME)
 	confData, err := os.ReadFile(curConfPath)
 	if err != nil {
@@ -76,9 +77,63 @@ func main() {
 		gLogger.Critical("json unmarshal - pushconf:", err)
 	}
 	gLogger.Info("Config File Unmarshal Success.")
-
+	// init pusher, while calling new method:
+	// check config logic and if everything is fulfilled
+	pusher, err := pushsdk.NewPusher(pushConf)
+	if err != nil {
+		gLogger.Critical("new pusher: ", err)
+	}
+	gLogger.Info("Pusher initialized.")
+	// build generalized push content
+	gpc, err := preparePushContent()
+	if err != nil {
+		gLogger.Critical("prepare push content:", err)
+	}
+	gLogger.Info("Push content prepared.")
+	pusher.StageGeneralPushContent(gpc)
+	gLogger.Info("Push content staged successfully.")
+	// transform and send out
+	err = pusher.SendPush()
+	if err != nil {
+		gLogger.Critical("send push content:", err)
+	}
+	gLogger.Info("Push content sent successfully.")
 }
 
 func printUsage() {
 	_, _ = fmt.Fprintln(os.Stderr, "Usage: RDPAlarm.exe <Auth Domain> <Auth Username> <Auth IP>.")
+}
+
+func preparePushContent() (*pushsdk.GeneralPushContent, error) {
+	gLogger, err := utils.GetLoggerInstance()
+	if err != nil {
+		return nil, err
+	}
+	cIPs, err := utils.GetLocalIP()
+	if err != nil {
+		panic(err)
+	}
+	if cIPs == nil {
+		gLogger.Critical("get local ip:", utils.ErrCannotGetLocalIP)
+	}
+	gLogger.Info("Local IP got:", cIPs)
+	args := os.Args
+	hostname, _ := os.Hostname()
+	authDomain := func() string {
+		if len(args[1]) == 0 {
+			return "localhost"
+		} else {
+			return args[1]
+		}
+	}()
+	notiTitle := "RDP Login - Success"
+	notiBody := fmt.Sprintf("From: %s - %s\\%s\nHost: %s, Host IPs: %s \n",
+		args[3], authDomain, args[2], hostname, cIPs)
+	notiShort := fmt.Sprintf("User %s from %s", args[2], args[3])
+	gpc := &pushsdk.GeneralPushContent{
+		Title:       notiTitle,
+		ShortTitle:  notiShort,
+		Description: notiBody,
+	}
+	return gpc, nil
 }
