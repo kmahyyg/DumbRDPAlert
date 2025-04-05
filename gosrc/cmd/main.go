@@ -10,7 +10,12 @@ import (
 	"path/filepath"
 	"rdpalert/embedded"
 	"rdpalert/pushsdk"
-	netif "tailscale.com/net/interfaces"
+	netif "tailscale.com/net/netmon"
+)
+
+const (
+	LOGFILE_NAME  = "rdpalarm-running.log"
+	CONFJSON_NAME = "rdpalert_pushconf.json"
 )
 
 var (
@@ -21,15 +26,23 @@ var (
 )
 
 func main() {
+	// make sure log file is written to where program located, since CWD is SYSTEM32
+	curExecPath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	// seperate file and dir
+	curWorkPath := filepath.Dir(curExecPath)
+	finalLogFilePath := filepath.Join(curWorkPath, LOGFILE_NAME)
 	// add logrotate
-	logFdPrevinfo, err := os.Stat("rdpalarm-running.log")
+	logFdPrevinfo, err := os.Stat(finalLogFilePath)
 	if err == nil {
-		if logFdPrevinfo.Size() > 1073741824 {
-			_ = os.Remove("rdpalarm-running.log")
+		if logFdPrevinfo.Size() > 4194304 {
+			_ = os.Remove(finalLogFilePath)
 		}
 	}
 	// log file
-	logFd, err := os.OpenFile("rdpalarm-running.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFd, err := os.OpenFile(finalLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -42,10 +55,6 @@ func main() {
 	gLogger.Debug("Argv: ", os.Args)
 	gLogger.Info("Current Version: ", embedded.CurVersionStr)
 	// static data
-	curProg, err := os.Executable()
-	if err != nil {
-		gLogger.Critical("get exepath:", err)
-	}
 	curHostname, err := os.Hostname()
 	if err != nil {
 		gLogger.Critical("get hostname:", err)
@@ -58,8 +67,7 @@ func main() {
 	}
 	gLogger.Info("Params checked.")
 	// config
-	curProgDir, _ := filepath.Split(curProg)
-	curConfPath := filepath.Join(curProgDir, "rdpalert_pushconf.json")
+	curConfPath := filepath.Join(curWorkPath, CONFJSON_NAME)
 	confData, err := os.ReadFile(curConfPath)
 	if err != nil {
 		gLogger.Critical("read conf data:", err)
@@ -70,79 +78,26 @@ func main() {
 		gLogger.Critical("json unmarshal - pushconf:", err)
 	}
 	gLogger.Info("Config File Unmarshal Success.")
-	// pusher
-	pusher, err := pushsdk.NewPusher(pushConf, gLogger)
-	if err != nil {
-		gLogger.Critical("new pusher:", err)
-	}
-	gLogger.Info("Pusher initalized.")
-	// prepare content
-	postBodys, err := PreparePushContents(curHostname, os.Args)
-	if err != nil {
-		gLogger.Critical("prepare contents:", err)
-	}
-	gLogger.Info("Push Contents prepared,")
-	err = pusher.SetContents(postBodys)
-	if err != nil {
-		gLogger.Critical("post body set check:", err)
-	}
-	gLogger.Info("Push Contents checked.")
-	err = pusher.SendPushRequests()
-	if err != nil {
-		gLogger.Critical("send push req to serv:", err)
-	}
-	gLogger.Info("Push Request sent to server. now exit. done.")
+
 }
 
 func printUsage() {
 	_, _ = fmt.Fprintln(os.Stderr, "Usage: RDPAlarm.exe <Auth Domain> <Auth Username> <Auth IP>.")
 }
 
-func PreparePushContents(hostname string, args []string) ([]*pushsdk.PushContent, error) {
-	cIPs := GetLocalIP()
-	if cIPs == nil {
-		gLogger.Critical("get local ip:", ErrCannotGetLocalIP)
-	}
-	gLogger.Info("Local IP got:", cIPs)
-	pCont := make([]*pushsdk.PushContent, 0)
-	authDomain := func() string {
-		if len(args[1]) == 0 {
-			return "localhost"
-		} else {
-			return args[1]
-		}
-	}()
-	notiTitle := "RDP Login - Success"
-	notiBody := fmt.Sprintf("From: %s - %s\\%s\nHost: %s, IPs: %s \n",
-		args[3], authDomain, args[2], hostname, cIPs)
-	for _, v := range pushConf.DeviceKeys {
-		data := &pushsdk.PushContent{
-			Title:     notiTitle,
-			Body:      notiBody,
-			DeviceKey: v,
-		}
-		data.Init()
-		data.Level = pushConf.NotificationLevel
-		data.Group = "Security_RDPAlert"
-		data.Copy = hostname
-		pCont = append(pCont, data)
-	}
-	return pCont, nil
-}
-
 // GetLocalIP returns the non loopback local IP of the host
-func GetLocalIP() []string {
+func GetLocalIP() ([]string, error) {
 	dIf, _, err := netif.LocalAddresses()
 	if err != nil {
 		gLogger.Critical("get local addr:", err)
-		return nil
+		return nil, err
 	}
 	if len(dIf) == 0 {
-		return nil
+		return nil, ErrCannotGetLocalIP
 	}
 	res := make([]string, 0)
 	for _, v := range dIf {
 		res = append(res, v.String())
 	}
-	return res
+	return res, nil
 }
