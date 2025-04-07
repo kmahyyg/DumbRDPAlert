@@ -11,16 +11,17 @@ import (
 var (
 	verifier = validator.New()
 	//ErrConfigLogicMismatch    = errors.New("config logic mismatch, required item is not in place")
-	//ErrPushMethodNotSupported = errors.New("push method not supported")
+	ErrGPCIsNotSet            = errors.New("general push content is not staged")
+	ErrPushMethodNotSupported = errors.New("push method not supported")
 )
 
 type PushContent interface {
-	Init()                                                 // Init initiate default content and config
-	Provider() PushProvider                                // Provider return provider name for looking up config
-	FromGeneral(g GeneralPushContent) (PushContent, error) // FromGeneral transform from generalPushContent to specific
-	ToBytes() []byte                                       // ToBytes convert data to bytes then for send out
-	SetPushProvider()                                      // SetPushProvider ensures provider info is attached
-	AcceptExtParamSettings(d any)                          // AcceptExtParamSettings get config from PushProviderImpl and apply
+	Init()                                                  // Init initiate default content and config
+	Provider() PushProvider                                 // Provider return provider name for looking up config
+	FromGeneral(g *GeneralPushContent) (PushContent, error) // FromGeneral transform from generalPushContent to specific
+	ToBytes() ([]byte, error)                               // ToBytes convert data to bytes then for send out
+	SetPushProvider()                                       // SetPushProvider ensures provider info is attached
+	AcceptExtParamSettings(d any)                           // AcceptExtParamSettings get config from PushProviderImpl and apply
 }
 
 type GeneralPushContent struct {
@@ -76,11 +77,12 @@ type AbstractPushProvider struct {
 }
 type PushProviderImpl interface {
 	VerifyConfig() error
-	TransformToSpecificPushContent(g GeneralPushContent) (PushContent, error)
+	TransformToSpecificPushContent(g *GeneralPushContent) (PushContent, error)
 	SendPushContent(p PushContent) (*PushResponse, error)
 }
 
 // PushResponse represent HTTP Response Data from PushNotification Service Provider
+// Bark shared the same format of response,
 type PushResponse struct {
 	Code      int
 	Message   string
@@ -121,13 +123,49 @@ func (p *pusher) StageGeneralPushContent(g *GeneralPushContent) {
 }
 
 func (p *pusher) SendPush() error {
+	gLogger, err := utils.GetLoggerInstance()
+	if err != nil {
+		return err
+	}
+	if p.GeneralContent == nil {
+		return ErrGPCIsNotSet
+	}
 	if p.Config.IsDryRun {
-		gLogger, err := utils.GetLoggerInstance()
-		if err != nil {
-			return err
-		}
 		gLogger.Info("Config Is Set To DryRun, No HTTP Request will be sent.")
 		return nil
 	}
-	//TODO
+	// loop through each provider and instantiate
+	for k, v := range p.Config.PushMethods {
+		switch k {
+		case BarkForiOS:
+			prv := v.(*barkPushProvider)
+			spc, err := prv.TransformToSpecificPushContent(p.GeneralContent)
+			if err != nil {
+				gLogger.Error("Failed to transform to specific push content: ", err.Error())
+				return err
+			}
+			spr, err := prv.SendPushContent(spc)
+			if err != nil {
+				gLogger.Error("Failed to send push content: ", err.Error())
+				return err
+			}
+			gLogger.Info("Push response received: ", spr.String())
+		case ServChan3:
+			prv := v.(*sc3PushProvider)
+			spc, err := prv.TransformToSpecificPushContent(p.GeneralContent)
+			if err != nil {
+				gLogger.Error("Failed to transform to specific push content: ", err.Error())
+				return err
+			}
+			spr, err := prv.SendPushContent(spc)
+			if err != nil {
+				gLogger.Error("Failed to send push content: ", err.Error())
+				return err
+			}
+			gLogger.Info("Push response received: ", spr.String())
+		default:
+			return ErrPushMethodNotSupported
+		}
+	}
+	return nil
 }
