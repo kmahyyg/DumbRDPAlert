@@ -9,9 +9,10 @@ import (
 // current version is v2.2.0 for server side, updated at 2025/04/05
 type barkPushContent struct {
 	// required
-	Title     string `json:"title" validate:"required"`
-	Body      string `json:"body" validate:"required"`
-	DeviceKey string `json:"device_key" validate:"required"`
+	Title      string   `json:"title" validate:"required"`
+	Body       string   `json:"body" validate:"required"`
+	DeviceKey  string   `json:"device_key,omitempty"`
+	DeviceKeys []string `json:"device_keys,omitempty" validate:"required"`
 	// SubTitle is optional, but for UX, I'll make it required
 	SubTitle string `json:"subtitle" validate:"required"`
 	// from here, all options below are OPTIONAL
@@ -36,14 +37,19 @@ type barkPushContent struct {
 	providerName PushProvider
 }
 
-func (bpct *barkPushContent) FromGeneral(g GeneralPushContent) (PushContent, error) {
-	//TODO implement me
-	panic("implement me")
+func (bpct *barkPushContent) FromGeneral(g *GeneralPushContent) (PushContent, error) {
+	copyVal, exist1 := g.ExtParams["copyDest"]
+	if exist1 {
+		bpct.Copy = copyVal.(string)
+	}
+	bpct.Title = g.Title
+	bpct.SubTitle = g.ShortTitle
+	bpct.Body = g.Description
+	return bpct, nil
 }
 
-func (bpct *barkPushContent) ToBytes() []byte {
-	//TODO implement me
-	panic("implement me")
+func (bpct *barkPushContent) ToBytes() ([]byte, error) {
+	return json.Marshal(bpct)
 }
 
 func (bpct *barkPushContent) Init() {
@@ -52,6 +58,7 @@ func (bpct *barkPushContent) Init() {
 	bpct.providerName = BarkForiOS
 	bpct.Group = "Sec_RdpAlert"
 	bpct.Level = ActiveNotification
+	bpct.SetPushProvider()
 }
 
 func (bpct *barkPushContent) Provider() PushProvider {
@@ -70,6 +77,7 @@ func (bpct *barkPushContent) AcceptExtParamSettings(d any) {
 	if d1.NotificationGroup != "" {
 		bpct.Group = d1.NotificationGroup
 	}
+	bpct.DeviceKeys = d1.DeviceKeys
 }
 
 type barkPushProvider struct {
@@ -89,9 +97,11 @@ func (b barkPushProvider) VerifyConfig() error {
 	return nil
 }
 
-func (b barkPushProvider) TransformToSpecificPushContent(g GeneralPushContent) (PushContent, error) {
-	//TODO implement me
-	panic("implement me")
+func (b barkPushProvider) TransformToSpecificPushContent(g *GeneralPushContent) (PushContent, error) {
+	bpct := &barkPushContent{}
+	bpct.Init()
+	bpct.AcceptExtParamSettings(b.ExtraParams)
+	return bpct.FromGeneral(g)
 }
 
 func (b barkPushProvider) SendPushContent(p PushContent) (*PushResponse, error) {
@@ -100,7 +110,10 @@ func (b barkPushProvider) SendPushContent(p PushContent) (*PushResponse, error) 
 		return nil, err
 	}
 	pData := p.(*barkPushContent)
-	body := pData.ToBytes()
+	body, err := pData.ToBytes()
+	if err != nil {
+		return nil, err
+	}
 	respData, _, err := SendHttpPostJSON(b.ProviderServerURL, body)
 	pushResp := &PushResponse{}
 	err = json.Unmarshal(respData, pushResp)
