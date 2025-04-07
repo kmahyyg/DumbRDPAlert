@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"rdpalert/utils"
+	"strings"
 	"time"
 )
 
@@ -22,8 +23,13 @@ func (sc3p *sc3PushContent) Provider() PushProvider {
 }
 
 func (sc3p *sc3PushContent) FromGeneral(g *GeneralPushContent) (PushContent, error) {
-	//TODO implement me
-	panic("implement me")
+	sc3p.Title = g.Title
+	sc3p.ShortBriefing = g.ShortTitle
+	sc3p.Description = g.Description
+	if len(sc3p.Tags) != 0 {
+		sc3p.TagsStr = strings.Join(sc3p.Tags, "|")
+	}
+	return sc3p, nil
 }
 
 func (sc3p *sc3PushContent) ToBytes() ([]byte, error) {
