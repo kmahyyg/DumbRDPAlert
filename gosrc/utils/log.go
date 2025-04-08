@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"io"
 	"log"
 	"os"
 	"sync/atomic"
@@ -52,7 +53,8 @@ func (myl *dumbLogger) Init(lPrefix string) {
 	myl.l = log.Default()
 	myl.l.SetFlags(log.LstdFlags | log.Lmsgprefix)
 	myl.l.SetPrefix(lPrefix)
-	myl.l.SetOutput(myl.f)
+	logmulti_opt := io.MultiWriter(os.Stderr, myl.f)
+	myl.l.SetOutput(logmulti_opt)
 }
 
 func (myl *dumbLogger) dispose() error {
