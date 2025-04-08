@@ -1,6 +1,7 @@
 package pushsdk
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
@@ -39,20 +40,14 @@ func (gpc *GeneralPushContent) SetSpecificPushProvider(p PushProvider) {
 
 // PushConfig stored user-defined required configuration
 type PushConfig struct {
-	PushMethods map[PushProvider]PushProviderImpl `json:"pushMethods" validate:"required"`
-	IsDryRun    bool                              `json:"isDryRun" validate:"boolean,required"`
+	PushMethods map[PushProvider]json.RawMessage `json:"pushMethods" validate:"required"`
+	IsDryRun    bool                             `json:"isDryRun" validate:"boolean,required"`
 }
 
 func (pc *PushConfig) VerifyConfig() error {
 	err := verifier.Struct(pc)
 	if err != nil {
 		return err
-	}
-	for _, v := range pc.PushMethods {
-		err = v.VerifyConfig()
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -70,6 +65,7 @@ const (
 )
 
 // AbstractPushProvider handle all provider specific issues
+// Only used for skeleton and code framework, didn't implement any actual methods
 type AbstractPushProvider struct {
 	ProviderServerURL string `json:"serverURL" validate:"url,required"`
 	ExtraParams       any    `json:"extParams" validate:"omitempty"`
@@ -138,7 +134,15 @@ func (p *pusher) SendPush() error {
 	for k, v := range p.Config.PushMethods {
 		switch k {
 		case BarkForiOS:
-			prv := v.(*barkPushProvider)
+			var prv = &barkPushProvider{}
+			err = json.Unmarshal(v, prv)
+			if err != nil {
+				return err
+			}
+			err = prv.VerifyConfig()
+			if err != nil {
+				return err
+			}
 			spc, err := prv.TransformToSpecificPushContent(p.GeneralContent)
 			if err != nil {
 				gLogger.Error("Failed to transform to specific push content: ", err.Error())
@@ -151,7 +155,15 @@ func (p *pusher) SendPush() error {
 			}
 			gLogger.Info("Push response received: ", spr.String())
 		case ServChan3:
-			prv := v.(*sc3PushProvider)
+			var prv = &sc3PushProvider{}
+			err = json.Unmarshal(v, prv)
+			if err != nil {
+				return err
+			}
+			err = prv.VerifyConfig()
+			if err != nil {
+				return err
+			}
 			spc, err := prv.TransformToSpecificPushContent(p.GeneralContent)
 			if err != nil {
 				gLogger.Error("Failed to transform to specific push content: ", err.Error())
