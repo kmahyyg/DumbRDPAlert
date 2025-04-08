@@ -13,6 +13,10 @@ var (
 	ErrLoggerNotInitialized = errors.New("logger not initialized")
 )
 
+const (
+	debugEnv = "IS_IN_DEBUG"
+)
+
 func InitLogger(outputFilePath string, logPrefix string) error {
 	currentLogger.fdpath = outputFilePath
 	currentLogger.Init(logPrefix)
@@ -53,8 +57,12 @@ func (myl *dumbLogger) Init(lPrefix string) {
 	myl.l = log.Default()
 	myl.l.SetFlags(log.LstdFlags | log.Lmsgprefix)
 	myl.l.SetPrefix(lPrefix)
-	logmulti_opt := io.MultiWriter(os.Stderr, myl.f)
-	myl.l.SetOutput(logmulti_opt)
+	if _, exists := os.LookupEnv(debugEnv); exists {
+		logmulti_opt := io.MultiWriter(os.Stderr, myl.f)
+		myl.l.SetOutput(logmulti_opt)
+		return
+	}
+	myl.l.SetOutput(myl.f)
 }
 
 func (myl *dumbLogger) dispose() error {

@@ -4,7 +4,9 @@
 
 Run `./prebuild.sh` at project root folder then build with:
 
-Go Tool Argument: `-ldflags="-s -w -H=windowsgui" -trimpath`
+Go Tool Argument: `-ldflags="-s -w -H=windowsgui" -trimpath` in production.
+
+In debug environment: Set environment variable `IS_IN_DEBUG=1` and remove `-H=windowsgui` while compiling.
 
 ## Usage
 
