@@ -41,7 +41,7 @@ func (gpc *GeneralPushContent) SetSpecificPushProvider(p PushProvider) {
 // PushConfig stored user-defined required configuration
 type PushConfig struct {
 	PushMethods map[PushProvider]json.RawMessage `json:"pushMethods" validate:"required"`
-	IsDryRun    bool                             `json:"isDryRun" validate:"boolean,required"`
+	IsDryRun    bool                             `json:"isDryRun"`
 }
 
 func (pc *PushConfig) VerifyConfig() error {
