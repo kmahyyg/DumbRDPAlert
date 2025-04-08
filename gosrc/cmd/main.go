@@ -125,9 +125,9 @@ func preparePushContent() (*pushsdk.GeneralPushContent, error) {
 		}
 	}()
 	notiTitle := "RDP Login - Success"
-	notiBody := fmt.Sprintf("From: %s \n User: %s\\%s\n Host: %s \n Host IPs: %s \n",
+	notiBody := fmt.Sprintf("From: %s \nUser: %s\\%s \nHost: %s \nHost IPs: %s \n",
 		args[3], authDomain, args[2], hostname, cIPs)
-	notiShort := fmt.Sprintf("%s from %s Logged into %s", args[2], args[3], hostname)
+	notiShort := fmt.Sprintf("%s from %s into %s", args[2], args[3], hostname)
 	gpc := &pushsdk.GeneralPushContent{
 		Title:       notiTitle,
 		ShortTitle:  notiShort,
