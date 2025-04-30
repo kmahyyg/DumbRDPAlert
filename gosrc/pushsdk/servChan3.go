@@ -3,7 +3,6 @@ package pushsdk
 import (
 	"encoding/json"
 	"fmt"
-	"rdpalert/utils"
 	"strings"
 	"time"
 )
@@ -78,10 +77,6 @@ func (s sc3PushProvider) TransformToSpecificPushContent(g *GeneralPushContent) (
 }
 
 func (s sc3PushProvider) SendPushContent(p PushContent) (*PushResponse, error) {
-	gLogger, err := utils.GetLoggerInstance()
-	if err != nil {
-		return nil, err
-	}
 	pData := p.(*sc3PushContent)
 	body, err := pData.ToBytes()
 	if err != nil {
