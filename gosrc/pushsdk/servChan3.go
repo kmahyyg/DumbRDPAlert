@@ -100,7 +100,6 @@ func (s sc3PushProvider) SendPushContent(p PushContent) (*PushResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	gLogger.Info("pushResponse:", gpr)
 	return gpr, nil
 }
 
