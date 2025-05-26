@@ -108,11 +108,13 @@ type sc3PushResponse struct {
 				MessageIds struct {
 					MessageId []string `json:"messageId,omitempty"`
 				} `json:"messageIds,omitempty"`
+				RequestID string `json:"requestId,omitempty"`
 			} `json:"android,omitempty"`
 			IOS struct {
 				MessageIds struct {
 					MessageId []string `json:"messageId,omitempty"`
 				} `json:"messageIds,omitempty"`
+				RequestID string `json:"requestId,omitempty"`
 			} `json:"ios,omitempty"`
 		} `json:"meta,omitempty"`
 	} `json:"data"`
@@ -120,8 +122,8 @@ type sc3PushResponse struct {
 }
 
 func (sc3pr *sc3PushResponse) ToGeneralPushResponse() (*PushResponse, error) {
-	respMsg := fmt.Sprintf("ErrorNo: %d , PushID: %d, OriRespMsg: %s, AliyunPushMsgIDs(Android): %v ,AliyunPushMsgIDs(iOS): %v", sc3pr.ErrorNo, sc3pr.Data.PushID,
-		sc3pr.Message, sc3pr.Data.Meta.Android.MessageIds.MessageId, sc3pr.Data.Meta.IOS.MessageIds.MessageId)
+	respMsg := fmt.Sprintf("ErrorNo: %d , PushID: %d, OriRespMsg: %s, AliyunPushMsgIDs(Android): %v - Req: %s ,AliyunPushMsgIDs(iOS): %v - Req: %s", sc3pr.ErrorNo, sc3pr.Data.PushID,
+		sc3pr.Message, sc3pr.Data.Meta.Android.MessageIds.MessageId, sc3pr.Data.Meta.Android.RequestID, sc3pr.Data.Meta.IOS.MessageIds.MessageId, sc3pr.Data.Meta.IOS.RequestID)
 	gpr := &PushResponse{
 		Code:      sc3pr.Code,
 		Message:   respMsg,
