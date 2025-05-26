@@ -122,7 +122,7 @@ type sc3PushResponse struct {
 }
 
 func (sc3pr *sc3PushResponse) ToGeneralPushResponse() (*PushResponse, error) {
-	respMsg := fmt.Sprintf("ErrorNo: %d , PushID: %d, OriRespMsg: %s, AliyunPushMsgIDs(Android): %v - Req: %s ,AliyunPushMsgIDs(iOS): %v - Req: %s", sc3pr.ErrorNo, sc3pr.Data.PushID,
+	respMsg := fmt.Sprintf("ErrorNo: %d , PushID: %d, OriRespMsg: %s, AliyunPushMsgIDs(Android): %v - Req: %s , AliyunPushMsgIDs(iOS): %v - Req: %s ", sc3pr.ErrorNo, sc3pr.Data.PushID,
 		sc3pr.Message, sc3pr.Data.Meta.Android.MessageIds.MessageId, sc3pr.Data.Meta.Android.RequestID, sc3pr.Data.Meta.IOS.MessageIds.MessageId, sc3pr.Data.Meta.IOS.RequestID)
 	gpr := &PushResponse{
 		Code:      sc3pr.Code,
